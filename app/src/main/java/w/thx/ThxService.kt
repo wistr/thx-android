@@ -21,70 +21,62 @@ class ThxService : VpnService() {
     private fun onConnected(c: HashMap<String, Any>, address: ByteArray) {
 
         runOnMainLoop {
-            val conn = nativeFD()
-            val builder = Builder()
             val addr4Str: String?
             val addr6Str: String?
 
-            protect(conn)
-            if (address[0] != 0.toByte()) {
-                try {
-                    val ipv4AddressBytes = ByteArray(4)
-                    for (i in 0 until 4)
-                        ipv4AddressBytes[i] = address[i]
-
-                    val inet4Address = Inet4Address.getByAddress(ipv4AddressBytes)
-                    addr4Str = inet4Address.hostAddress
-                    builder.addAddress(inet4Address, 32)
-
-                    val ipv6AddressBytes = ByteArray(16)
-                    for (i in 0 until 16)
-                        ipv6AddressBytes[i] = address[i + 4]
-
-                    val inet6Address = Inet6Address.getByAddress(ipv6AddressBytes)
-                    addr6Str = inet6Address.hostAddress
-                    builder.addAddress(inet6Address, 128)
-
-                } catch (e: Exception) {
-                    showToastMsg(e.message)
-                    return@runOnMainLoop
-                }
-
-            } else {
-                showToastMsg("连接被拒绝")
-                return@runOnMainLoop
-            }
-
-            builder.addRoute("0.0.0.0", 0)
-            builder.addRoute("::", 0)
-
-            (c[APP] as ArrayList<*>).forEach {
-                if (it is String) {
-                    try {
-                        builder.addAllowedApplication(it)
-                    } catch (_: PackageManager.NameNotFoundException) {
-                    }
-                }
-            }
-
-            (c[DNS] as ArrayList<*>).forEach {
-                if (it is String) {
-                    try {
-                        builder.addDnsServer(it)
-                    } catch (e: Exception) {
-                        showToastMsg(e.message)
-                    }
-                }
-            }
-
             try {
+                val conn = nativeConn()
+                val builder = Builder()
+
+                if (address[0] == 0.toByte())
+                    throw Exception("连接被拒绝")
+
+                val ipv4AddressBytes = ByteArray(4)
+                for (i in 0 until 4)
+                    ipv4AddressBytes[i] = address[i]
+
+                val inet4Address = Inet4Address.getByAddress(ipv4AddressBytes)
+                addr4Str = inet4Address.hostAddress
+                builder.addAddress(inet4Address, 32)
+
+                val ipv6AddressBytes = ByteArray(16)
+                for (i in 0 until 16)
+                    ipv6AddressBytes[i] = address[i + 4]
+
+                val inet6Address = Inet6Address.getByAddress(ipv6AddressBytes)
+                addr6Str = inet6Address.hostAddress
+                builder.addAddress(inet6Address, 128)
+
+                protect(conn)
+                builder.addRoute("0.0.0.0", 0)
+                builder.addRoute("::", 0)
+
+                (c[APP] as ArrayList<*>).forEach {
+                    if (it is String) {
+                        try {
+                            builder.addAllowedApplication(it)
+                        } catch (_: PackageManager.NameNotFoundException) {
+                        }
+                    }
+                }
+
+                (c[DNS] as ArrayList<*>).forEach {
+                    if (it is String) {
+                        try {
+                            builder.addDnsServer(it)
+                        } catch (e: Exception) {
+                            showToastMsg(e.message)
+                        }
+                    }
+                }
+
                 val tun = builder.establish() ?: throw Exception("tun 错误")
-                if (!nativePrep(tun.detachFd())) // 当发生错误 资源在 Native 释放掉
+                if (!nativePrep(tun.detachFd()))
                     throw Exception("Prep 错误")
 
             } catch (e: Exception) {
+                nativeCloseConn()
                 showToastMsg(e.message)
-                stopSelf()
                 return@runOnMainLoop
             }
 
@@ -109,13 +101,16 @@ class ThxService : VpnService() {
         private var sThxService: ThxService? = null
 
         @JvmStatic
-        private external fun nativeFD(): Int // 连接隧道 文件描述符
+        private external fun nativeConn(): Int // 连接隧道 文件描述符
 
         @JvmStatic
         private external fun nativeLoop()
 
         @JvmStatic
         private external fun nativePrep(tun: Int): Boolean
+
+        @JvmStatic
+        private external fun nativeCloseConn()
 
         @JvmStatic
         private external fun nativeAESInit(
@@ -143,7 +138,6 @@ class ThxService : VpnService() {
             user: ByteArray,
             info: ByteArray,
         ): ByteArray?
-
 
         private fun connFailed(msg: String?) {
             showToastMsg(msg)
