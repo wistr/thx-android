@@ -1,0 +1,43 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    compileSdk 31
+    ndkVersion '25.0.8775105'
+    buildToolsVersion '33.0.0'
+
+    defaultConfig {
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+        applicationId 'w.thx'
+        minSdk 30
+        //noinspection OldTargetApi
+        targetSdk 31
+        versionCode 3
+        versionName "0.03"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+    externalNativeBuild {
+        cmake {
+            path file('src/main/cpp/CMakeLists.txt')
+            version '3.22.1'
+        }
+    }
+    namespace 'w.thx'
+}
