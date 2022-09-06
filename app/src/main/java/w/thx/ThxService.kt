@@ -1,20 +1,29 @@
 package w.thx
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.VpnService
-import android.os.Process.myPid
-import android.os.Process.setThreadPriority
 import java.io.File
 import java.net.Inet4Address
 import java.net.Inet6Address
-
 
 class ThxService : VpnService() {
 
     override fun onCreate() {
         sThxService = this
-        setThreadPriority(myPid(), -20)
+        val channelId = sChannelId
+        val nm = getSystemService(NotificationManager::class.java)
+        nm.createNotificationChannel(
+            NotificationChannel(
+                channelId,
+                channelId,
+                NotificationManager.IMPORTANCE_NONE
+            )
+        )
+        startForeground(2, Notification.Builder(this, channelId).setContentText("正在运行").build())
         super.onCreate()
     }
 
@@ -98,6 +107,8 @@ class ThxService : VpnService() {
 
         private var sTime = 0L
 
+        private const val sChannelId = "x"
+
         private var sThxService: ThxService? = null
 
         @JvmStatic
@@ -147,18 +158,16 @@ class ThxService : VpnService() {
         fun connect() {
             if (sThxService == null) {
                 getInstance().run {
-                    startService(Intent(this, ThxService::class.java))
+                    startForegroundService(Intent(this, ThxService::class.java))
                 }
             }
 
             Thread {
                 ThxActivity.setConnecting()
                 val file = File(getInstance().dataDir.absolutePath + CONFIG_PATH)
-                if (!file.exists()) {
-                    showToastMsg("未找到配置文件")
-                    ThxActivity.setUnconnected()
-                    return@Thread
-                }
+                if (!file.exists())
+                    return@Thread connFailed("未找到配置文件")
+
                 connect(load(file))
 
             }.start()
@@ -174,7 +183,7 @@ class ThxService : VpnService() {
             nativeAESInit(iv, iv.size, key, key.size)
 
             val info =
-                "${System.currentTimeMillis()}\nbrand:  ${android.os.Build.BRAND}\nproduct:  ${android.os.Build.PRODUCT}\n".encodeToByteArray()
+                "brand:  ${android.os.Build.BRAND}\nproduct:  ${android.os.Build.PRODUCT}\n".encodeToByteArray()
 
             val tls = c[TLS] as String?
             val address: ByteArray? = if (tls != null && tls[0] == '1')

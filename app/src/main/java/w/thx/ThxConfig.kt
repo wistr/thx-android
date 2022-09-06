@@ -47,12 +47,15 @@ fun import(uri: Uri) {
     val fo = FileOutputStream(file)
     val buf = ByteArray(2048)
 
-    do {
+    while (true) {
         val len = fi.read(buf)
-        if (len > 0) fo.write(buf, 0, len)
-        bytes += len
-    } while (len != -1 && bytes < max)
-
+        if (len == -1 || bytes >= max) {
+            break
+        } else if (len > 0) {
+            fo.write(buf, 0, len)
+            bytes += len
+        }
+    }
 
     fi.close()
     fo.flush()
