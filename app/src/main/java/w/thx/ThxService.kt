@@ -14,7 +14,7 @@ class ThxService : VpnService() {
 
     override fun onCreate() {
         sThxService = this
-        val channelId = sChannelId
+        val channelId = "x"
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
             NotificationChannel(
@@ -23,7 +23,12 @@ class ThxService : VpnService() {
                 NotificationManager.IMPORTANCE_NONE
             )
         )
-        startForeground(2, Notification.Builder(this, channelId).setContentText("正在运行").build())
+        startForeground(
+            2,
+            Notification.Builder(this, channelId).setSmallIcon(R.mipmap.ic_launcher_foreground)
+                .setContentText("正在运行")
+                .build()
+        )
         super.onCreate()
     }
 
@@ -105,10 +110,6 @@ class ThxService : VpnService() {
 
     companion object {
 
-        private var sTime = 0L
-
-        private const val sChannelId = "x"
-
         private var sThxService: ThxService? = null
 
         @JvmStatic
@@ -161,7 +162,6 @@ class ThxService : VpnService() {
                     startForegroundService(Intent(this, ThxService::class.java))
                 }
             }
-
             Thread {
                 ThxActivity.setConnecting()
                 val file = File(getInstance().dataDir.absolutePath + CONFIG_PATH)
@@ -213,11 +213,12 @@ class ThxService : VpnService() {
 
         private fun restartThxService() {
 
+            var time = 0L
             while (true) {
                 if (ThxActivity.sState == ThxActivity.CONNECTED) {
                     return
-                } else if (ThxActivity.sState == ThxActivity.UNCONNECTED && System.currentTimeMillis() - sTime > 5000) {
-                    sTime = System.currentTimeMillis()
+                } else if (ThxActivity.sState == ThxActivity.UNCONNECTED && System.currentTimeMillis() - time > 5000) {
+                    time = System.currentTimeMillis()
                     showToastMsg("正在重新建立连接")
                     connect()
                 } else {

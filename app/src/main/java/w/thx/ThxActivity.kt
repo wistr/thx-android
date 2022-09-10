@@ -25,11 +25,10 @@ class ThxActivity : Activity() {
 
         mConnBtn = findViewById<Button?>(R.id.button_switch).apply {
             setOnClickListener {
-                if (sAuto || sState != UNCONNECTED) {
+                if (sAuto || sState != UNCONNECTED)
                     showToastMsg("Unable to click")
-                    return@setOnClickListener
-                }
-                connect()
+                else
+                    connect()
             }
         }
 
