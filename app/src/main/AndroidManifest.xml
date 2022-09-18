@@ -16,7 +16,7 @@
     <application
         android:name=".ThxApp"
         android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
+        android:label="Thx"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/Thx">
         <activity
@@ -36,7 +36,7 @@
             android:exported="false"
             android:permission="android.permission.BIND_VPN_SERVICE">
             <intent-filter>
-                <action android:name="w.thx" />
+                <action android:name="w.thx.ThxService" />
             </intent-filter>
         </service>
 

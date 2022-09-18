@@ -5,7 +5,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.FileReader
 
-const val CONFIG_PATH = "/thx.x"
+const val FILENAME = "thx.x"
 
 const val APP = "\"app\""
 
@@ -32,7 +32,7 @@ const val KEY = "\"key\""
 fun import(uri: Uri) {
 
     val context = getInstance()
-    val file = File(context.dataDir.absolutePath + CONFIG_PATH)
+    val file = File(context.dataDir.absolutePath + File.separator + FILENAME)
 
     if (file.exists()) file.delete()
 

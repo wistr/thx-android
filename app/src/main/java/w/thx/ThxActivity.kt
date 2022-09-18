@@ -91,7 +91,7 @@ class ThxActivity : Activity() {
         runOnUiThread {
 
             mConnBtn?.background = getDrawable(R.drawable.ic_on)
-            mHint?.text = getString(R.string.connected)
+            mHint?.text = "连接成功"
 
             if (addr4 != null)
                 mIpa4?.text = addr4
@@ -105,7 +105,7 @@ class ThxActivity : Activity() {
     private fun unconnected() {
         runOnUiThread {
             mConnBtn?.background = getDrawable(R.drawable.ic_off)
-            mHint?.text = getString(R.string.tap_to_connect)
+            mHint?.text = "点击连接"
         }
     }
 

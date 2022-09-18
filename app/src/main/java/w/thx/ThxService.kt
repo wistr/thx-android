@@ -14,7 +14,7 @@ class ThxService : VpnService() {
 
     override fun onCreate() {
         sThxService = this
-        val channelId = "x"
+        val channelId = "默认通知"
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
             NotificationChannel(
@@ -23,6 +23,7 @@ class ThxService : VpnService() {
                 NotificationManager.IMPORTANCE_NONE
             )
         )
+
         startForeground(
             2,
             Notification.Builder(this, channelId).setSmallIcon(R.mipmap.ic_launcher_foreground)
@@ -30,6 +31,11 @@ class ThxService : VpnService() {
                 .build()
         )
         super.onCreate()
+    }
+
+    override fun onDestroy() {
+        stopForeground(true)
+        super.onDestroy()
     }
 
     private fun onConnected(c: HashMap<String, Any>, address: ByteArray) {
@@ -90,8 +96,7 @@ class ThxService : VpnService() {
 
             } catch (e: Exception) {
                 nativeCloseConn()
-                showToastMsg(e.message)
-                return@runOnMainLoop
+                return@runOnMainLoop connFailed(e.message)
             }
 
             ThxActivity.setConnected(addr4Str, addr6Str)
@@ -164,7 +169,7 @@ class ThxService : VpnService() {
             }
             Thread {
                 ThxActivity.setConnecting()
-                val file = File(getInstance().dataDir.absolutePath + CONFIG_PATH)
+                val file = File(getInstance().dataDir.absolutePath + File.separator + FILENAME)
                 if (!file.exists())
                     return@Thread connFailed("未找到配置文件")
 
