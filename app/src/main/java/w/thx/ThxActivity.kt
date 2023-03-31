@@ -5,34 +5,35 @@ import android.app.Activity
 import android.content.Intent
 import android.net.VpnService
 import android.os.Bundle
-import android.widget.Button
+import android.view.View
 import android.widget.TextView
 
 class ThxActivity : Activity() {
 
-    private var mHint: TextView? = null
     private var mIpa4: TextView? = null
+
     private var mIpa6: TextView? = null
-    private var mConnBtn: Button? = null
-    private var mDownBtn: Button? = null
+
+    private var mState: TextView? = null
+
+    private var mConnBtn: TextView? = null
+
+    private var mAkari: View? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
-        setContentView(R.layout.home)
-        mHint = findViewById(R.id.hint)
+        setContentView(R.layout.main)
         mIpa4 = findViewById(R.id.ipv4)
         mIpa6 = findViewById(R.id.ipv6)
-
-        mConnBtn = findViewById<Button?>(R.id.button_switch).apply {
+        mState = findViewById(R.id.state)
+        mConnBtn = findViewById<TextView?>(R.id.connect).apply {
             setOnClickListener {
-                if (sAuto || sState != UNCONNECTED)
-                    showToastMsg("Unable to click")
-                else
+                if (!sAuto)
                     connect()
             }
         }
 
-        mDownBtn = findViewById<Button?>(R.id.button_down).apply {
+        mAkari = findViewById<View?>(R.id.ic).apply {
             setOnClickListener {
                 val intent = Intent(Intent.ACTION_GET_CONTENT)
                 intent.type = "*/*"
@@ -90,27 +91,38 @@ class ThxActivity : Activity() {
     private fun connected(addr4: String?, addr6: String?) {
         runOnUiThread {
 
-            mConnBtn?.background = getDrawable(R.drawable.ic_on)
-            mHint?.text = "连接成功"
-
             if (addr4 != null)
                 mIpa4?.text = addr4
 
             if (addr6 != null)
                 mIpa6?.text = addr6
 
+            mState?.run {
+                text = "连接成功"
+                setTextColor(0xFF78B4B4.toInt())
+            }
+
+            mConnBtn?.visibility = View.INVISIBLE
         }
     }
 
     private fun unconnected() {
         runOnUiThread {
-            mConnBtn?.background = getDrawable(R.drawable.ic_off)
-            mHint?.text = "点击连接"
+            mIpa4?.text = ""
+            mIpa6?.text = ""
+            mConnBtn?.visibility = View.VISIBLE
+            mState?.run {
+                text = "未连接"
+                setTextColor(0xFFB47878.toInt())
+            }
         }
     }
 
     private fun connecting() {
-        runOnUiThread { mHint?.text = "" }
+        runOnUiThread {
+            mState?.text = "正在连接"
+            mConnBtn?.visibility = View.INVISIBLE
+        }
     }
 
     companion object {

@@ -11,7 +11,6 @@ set(CMAKE_C_FLAGS " -s -Ofast -Wall")
 add_library(
         thx
         SHARED
-        aes-gcm.c
         android.c
         thx.c
 )

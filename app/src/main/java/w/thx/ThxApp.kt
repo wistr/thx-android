@@ -15,12 +15,14 @@ class ThxApp : Application() {
 
 private var sInstance: ThxApp? = null
 
+private var sHandler = Handler(Looper.getMainLooper())
+
 fun getInstance(): ThxApp {
     return sInstance!!
 }
 
 fun runOnMainLoop(r: Runnable) {
-    Handler(Looper.getMainLooper()).post(r)
+    sHandler.post(r)
 }
 
 fun showToastMsg(msg: String?) {

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/ic"
+        android:layout_width="160dp"
+        android:layout_height="160dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="44dp"
+        android:background="@drawable/bg_akari"
+        android:foreground="@mipmap/ic_launcher_foreground"
+        tools:ignore="ContentDescription" />
+
+    <TextView
+        android:id="@+id/label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@id/ic"
+        android:layout_marginBottom="32dp"
+        android:layout_toEndOf="@id/ic"
+        android:background="@android:color/transparent"
+        android:gravity="center"
+        android:text="阿卡林 ~"
+        android:textAlignment="center"
+        android:textColor="#FF5A5A5A"
+        android:textSize="22dp"
+        tools:ignore="RelativeOverlap,SpUsage" />
+
+    <RelativeLayout
+        android:id="@+id/msg"
+        android:layout_width="300dp"
+        android:layout_height="180dp"
+        android:layout_below="@id/ic"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="60dp"
+        android:background="@drawable/bg_button">
+
+        <TextView
+            android:id="@+id/state"
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:layout_centerInParent="true"
+            android:gravity="center"
+            android:text="连接成功"
+            android:textSize="24dp" />
+
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/ipv4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/ipv6"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="8dp"
+        android:background="@android:color/transparent"
+        android:textAlignment="viewStart"
+        android:textColor="#FFAFAFAF"
+        android:textSize="14dp" />
+
+    <TextView
+        android:id="@+id/ipv6"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="28dp"
+        android:background="@android:color/transparent"
+        android:textAlignment="viewStart"
+        android:textColor="#FFAFAFAF"
+        android:textSize="14dp" />
+
+
+    <TextView
+        android:id="@+id/connect"
+        android:layout_width="300dp"
+        android:layout_height="60dp"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/bg_button"
+        android:clickable="true"
+        android:gravity="center"
+        android:text="建立连接"
+        android:textColor="#8ABEE8"
+        android:textSize="18dp" />
+
+</RelativeLayout>

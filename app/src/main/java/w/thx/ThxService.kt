@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.VpnService
 import java.io.File
+import java.io.IOException
 import java.net.Inet4Address
 import java.net.Inet6Address
 
@@ -27,9 +28,9 @@ class ThxService : VpnService() {
         startForeground(
             2,
             Notification.Builder(this, channelId).setSmallIcon(R.mipmap.ic_launcher_foreground)
-                .setContentText("正在运行")
                 .build()
         )
+
         super.onCreate()
     }
 
@@ -105,7 +106,7 @@ class ThxService : VpnService() {
             Thread {
                 nativeLoop()
                 ThxActivity.setUnconnected()
-                restartThxService()
+                retry()
 
             }.start()
 
@@ -129,30 +130,15 @@ class ThxService : VpnService() {
         @JvmStatic
         private external fun nativeCloseConn()
 
+        @Throws(IOException::class)
         @JvmStatic
-        private external fun nativeAESInit(
-            iv: ByteArray,
-            ivSize: Int,
-            key: ByteArray,
-            keySize: Int
-        )
-
-        @JvmStatic
-        private external fun sslConn(
+        private external fun tlsConn(
             ver: Int,
             host: ByteArray,
             path: ByteArray,
             port: Int,
             user: ByteArray,
-            info: ByteArray,
-        ): ByteArray?
-
-        @JvmStatic
-        private external fun tcpConn(
-            ver: Int,
-            addr: ByteArray,
-            port: Int,
-            user: ByteArray,
+            certPath: ByteArray,
             info: ByteArray,
         ): ByteArray?
 
@@ -167,8 +153,9 @@ class ThxService : VpnService() {
                     startForegroundService(Intent(this, ThxService::class.java))
                 }
             }
+
+            ThxActivity.setConnecting()
             Thread {
-                ThxActivity.setConnecting()
                 val file = File(getInstance().dataDir.absolutePath + File.separator + FILENAME)
                 if (!file.exists())
                     return@Thread connFailed("未找到配置文件")
@@ -183,31 +170,25 @@ class ThxService : VpnService() {
             if (!check(c))
                 return connFailed(null)
 
-            val iv = (c[IV] as String).encodeToByteArray()
-            val key = (c[KEY] as String).encodeToByteArray()
-            nativeAESInit(iv, iv.size, key, key.size)
-
             val info =
                 "brand:  ${android.os.Build.BRAND}\nproduct:  ${android.os.Build.PRODUCT}\n".encodeToByteArray()
 
-            val tls = c[TLS] as String?
-            val address: ByteArray? = if (tls != null && tls[0] == '1')
-                sslConn(
-                    (c[VER] as String).toInt(),
-                    (c[ADDR] as String).encodeToByteArray(),
-                    (c[PATH] as String).encodeToByteArray(),
-                    (c[PORT] as String).toInt(),
-                    (c[USER] as String).encodeToByteArray(),
-                    info
-                )
-            else
-                tcpConn(
-                    (c[VER] as String).toInt(),
-                    (c[ADDR] as String).encodeToByteArray(),
-                    (c[PORT] as String).toInt(),
-                    (c[USER] as String).encodeToByteArray(),
-                    info
-                )
+
+            val address =
+                try {
+                    tlsConn(
+                        (c[VER] as String).toInt(),
+                        (c[ADDR] as String).encodeToByteArray(),
+                        (c[PATH] as String).encodeToByteArray(),
+                        (c[PORT] as String).toInt(),
+                        (c[USER] as String).encodeToByteArray(),
+                        getCertFilePath().encodeToByteArray(),
+                        info
+                    )
+                } catch (e: IOException) {
+                    return connFailed(e.message)
+                }
+
 
             if (address == null)
                 connFailed("连接失败")
@@ -216,7 +197,7 @@ class ThxService : VpnService() {
 
         }
 
-        private fun restartThxService() {
+        private fun retry() {
 
             var time = 0L
             while (true) {

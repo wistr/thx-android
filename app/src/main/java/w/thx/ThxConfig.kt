@@ -1,6 +1,7 @@
 package w.thx
 
 import android.net.Uri
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.FileReader
@@ -17,57 +18,81 @@ const val VER = "\"ver\""
 
 const val PORT = "\"port\""
 
-const val TLS = "\"tls\""
-
 const val ADDR = "\"addr\""
 
 const val PATH = "\"path\""
 
-const val IV = "\"iv\""
-
-const val KEY = "\"key\""
-
+fun getCertFilePath(): String {
+    return getInstance().dataDir.absolutePath + File.separator + "CERT"
+}
 
 // 未处理异常
 fun import(uri: Uri) {
 
-    val context = getInstance()
-    val file = File(context.dataDir.absolutePath + File.separator + FILENAME)
+    val app = getInstance()
 
-    if (file.exists()) file.delete()
+    val fi = app.contentResolver.openInputStream(uri)!!
+    val size = 1024 * 512
+    val buf = ByteArray(size)
+    val len = fi.read(buf)
+    fi.close()
 
-    if (!file.createNewFile()) {
-        showToastMsg("文件创建失败")
+    if (len >= size) {
+        showToastMsg("文件太大")
         return
     }
 
-    val max = 1024 * 1024 * 2
-    var bytes = 0
-    val fi = context.contentResolver.openInputStream(uri)!!
-    val fo = FileOutputStream(file)
-    val buf = ByteArray(2048)
+    val bytes = buf.copyOfRange(0, len)
 
-    while (true) {
-        val len = fi.read(buf)
-        if (len == -1 || bytes >= max) {
-            break
-        } else if (len > 0) {
-            fo.write(buf, 0, len)
-            bytes += len
-        }
+    val certBytes = getPEM(bytes)
+
+    if (certBytes == null) {
+        showToastMsg("未找到证书")
+        return
     }
 
-    fi.close()
-    fo.flush()
-    fo.close()
+    FileOutputStream(File(getCertFilePath())).run {
+        write(certBytes)
+        flush()
+        close()
+    }
 
-    if (bytes >= max)
-        showToastMsg("文件太大")
-    else
-        showToastMsg("导入成功")
+    FileOutputStream(File(app.dataDir.absolutePath + File.separator + FILENAME)).run {
+        write(bytes)
+        flush()
+        close()
+    }
+
+    showToastMsg("导入成功")
 
 }
 
+private fun getPEM(byteArray: ByteArray): ByteArray? {
+
+    var end = false
+    var begin = false
+
+    val lines = String(byteArray).split("\n")
+    val byteArrayOutputStream = ByteArrayOutputStream()
+
+    for (l in lines) {
+
+        if (!begin && l.contains("-----BEGIN CERTIFICATE-----"))
+            begin = true
+        else if (l.contains("-----END CERTIFICATE-----"))
+            end = true
+
+        if (begin) {
+            byteArrayOutputStream.write(l.encodeToByteArray())
+            byteArrayOutputStream.write('\n'.code)
+        }
+
+        if (end)
+            return byteArrayOutputStream.toByteArray()
+    }
+
+    return null
+}
 
 fun load(file: File): HashMap<String, Any> {
 
@@ -82,61 +107,43 @@ fun load(file: File): HashMap<String, Any> {
 
     for (l in lines) {
         val user = valOf(USER, l)
-        if (user != null && user.isNotEmpty()) {
+        if (!user.isNullOrEmpty()) {
             map[USER] = user
             continue
         }
 
         val ver = valOf(VER, l)
-        if (ver != null && ver.isNotEmpty()) {
+        if (!ver.isNullOrEmpty()) {
             map[VER] = ver
             continue
         }
 
         val port = valOf(PORT, l)
-        if (port != null && port.isNotEmpty()) {
+        if (!port.isNullOrEmpty()) {
             map[PORT] = port
             continue
         }
 
-        val tls = valOf(TLS, l)
-        if (tls != null && tls.isNotEmpty()) {
-            map[TLS] = tls
-            continue
-        }
-
         val address = valOf(ADDR, l)
-        if (address != null && address.isNotEmpty()) {
+        if (!address.isNullOrEmpty()) {
             map[ADDR] = address
             continue
         }
 
         val path = valOf(PATH, l)
-        if (path != null && path.isNotEmpty()) {
+        if (!path.isNullOrEmpty()) {
             map[PATH] = path
             continue
         }
 
-        val iv = valOf(IV, l)
-        if (iv != null && iv.isNotEmpty()) {
-            map[IV] = iv
-            continue
-        }
-
-        val key = valOf(KEY, l)
-        if (key != null && key.isNotEmpty()) {
-            map[KEY] = key
-            continue
-        }
-
         val d = valOf(DNS, l)
-        if (d != null && d.isNotEmpty()) {
+        if (!d.isNullOrEmpty()) {
             dns.add(d)
             continue
         }
 
         val a = valOf(APP, l)
-        if (a != null && a.isNotEmpty()) {
+        if (!a.isNullOrEmpty()) {
             app.add(a)
             continue
         }
@@ -144,20 +151,17 @@ fun load(file: File): HashMap<String, Any> {
     }
 
     return map
+
 }
 
 fun check(c: HashMap<String, Any>): Boolean {
 
-    val tlsStr = c[TLS] as String?
-    val isSSL: Boolean = tlsStr != null && tlsStr[0] == '1'
-
     try {
 
-        if (isSSL) {
-            val path = c[PATH] as String? ?: throw Exception("未填写路径")
-            if (path.length > 64)
-                throw Exception("路径超长")
-        }
+        val path = c[PATH] as String? ?: throw Exception("未填写路径")
+        if (path.length > 64)
+            throw Exception("路径超长")
+
 
         c[ADDR] as String? ?: throw Exception("未填写地址")
 
@@ -169,13 +173,6 @@ fun check(c: HashMap<String, Any>): Boolean {
         if (userStr.length > 32)
             throw Exception("用户超长")
 
-        val ivStr = c[IV] as String? ?: throw Exception("未填写 IV")
-        if (ivStr.length > 12)
-            throw Exception("IV 超长")
-
-        val keyStr = c[KEY] as String? ?: throw Exception("未填写 Key")
-        if (keyStr.length > 32)
-            throw Exception("Key 超长")
 
         val dns = c[DNS] as ArrayList<*>
         if (dns.isEmpty())
